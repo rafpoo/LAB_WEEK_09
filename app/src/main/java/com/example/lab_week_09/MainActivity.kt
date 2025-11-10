@@ -16,7 +16,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,7 +23,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.lab_week_09.ui.theme.LAB_WEEK_09Theme
 import androidx.compose.foundation.lazy.items
-
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,20 +42,16 @@ class MainActivity : ComponentActivity() {
                     // MaterialTheme.colorScheme.background untuk get background colornya
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Panggil Home Composable
-                    val list = listOf("Tanu", "Tina", "Tono")
-                    Home(list)
-                }
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    Home()
                 }
             }
         }
     }
 }
+
+data class Student(
+    var name: String
+)
 
 /* *
 * Disini, kita menghapus tag preview
@@ -68,46 +67,88 @@ class MainActivity : ComponentActivity() {
 /* @Composable digunakan untuk memberitahu compiler bahwa ini adalah
 * composable function. */
 @Composable
-fun Home(items: List<String>) {
+fun Home() {
     /*
-    * Disini, kita menggunakan LazyColumn untuk display list of items secara
-    * horizontal. Tapi dia hanya render items yang visible saja. jadi lebih
-    * efisien.
-    */
+    * Kita membuat mutable state list of students
+    * Kita menggunakan remember supaya membuat list nya
+    * mengingat value nya
+    *
+    * Supaya list ga bakal di recreate ketika composable nya
+    * recomposes */
 
+    // intinya, ini kek make useState di react
+    val listData = remember { mutableStateListOf(
+        Student("Tanu"),
+        Student("Tina"),
+        Student("Tono")
+    ) }
+
+    /* Disini, kita buat mutable state of Student
+    * supaya kita bisa dpt value dari input field */
+    var inputField = remember { mutableStateOf(Student("")) }
+
+    /* Disini kita panggil HomeContent composable
+    * Kita pass:
+    * 1. listData untuk menampilkan lsit of items dalam HomeContent
+    * 2. inputField =untuk menam[pilkan input vield value dalam HomeContent
+    * 3. lambda function untuk update value inputField
+    * 4. lambda functrion untuk menambah inputfield ke listData
+    */
+    HomeContent(
+        listData,
+        inputField.value,
+        { input -> inputField.value = inputField.value.copy(input)},
+        {
+            if (inputField.value.name.isNotBlank()) {
+                listData.add(inputField.value)
+                inputField.value = Student("")
+            }
+        }
+    )
+}
+
+/*untuk display content dari Home Composable*/
+@Composable
+fun HomeContent(
+    listData: SnapshotStateList<Student>,
+    inputField: Student,
+    onInputValueChange: (String) -> Unit,
+    onButtonClick: () -> Unit
+) {
+    // lazy column untuk display items lazily
     LazyColumn {
-        // display item di dalam LazyColumn
         item {
             Column(
                 modifier = Modifier.padding(16.dp).fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = stringResource(
-                    id = R.string.enter_item
-                ))
-
-                // text field itu kek input field gitu lho
+                Text(text = stringResource(id = R.string.enter_item))
                 TextField(
-                    value = "", // value ya berarti value awalnya
+                    value = inputField.name,
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
+                        keyboardType = KeyboardType.Text
                     ),
-                    onValueChange = {  } // apa yg terjadi ketika value berubah
+                    onValueChange = {
+                        // panggil lambda onInputValueCahnge
+                        onInputValueChange(it)
+                    }
                 )
-
-                Button(onClick = {  }) {
-                    Text(text = stringResource(id = R.string.button_click))
+                Button(onClick = {
+                    onButtonClick()
+                }) {
+                    Text(text = stringResource(
+                        id = R.string.button_click
+                    ))
                 }
-
             }
-
         }
-        items(items) { item ->
+
+        items(listData) { item ->
             Column(
                 modifier = Modifier.padding(vertical = 4.dp).fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = item)
+                Text(text = item.name)
             }
         }
     }
@@ -118,7 +159,7 @@ fun Home(items: List<String>) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewHome() {
-    Home(listOf("Tanu", "Tina", "Tono"))
+    Home()
 }
 
 @Composable
@@ -136,3 +177,4 @@ fun GreetingPreview() {
         Greeting("Android")
     }
 }
+
