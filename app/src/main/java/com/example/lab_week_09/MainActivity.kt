@@ -28,6 +28,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import com.example.lab_week_09.ui.theme.OnBackgroundItemText
+import com.example.lab_week_09.ui.theme.OnBackgroundTitleText
+import com.example.lab_week_09.ui.theme.PrimaryTextButton
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,7 +125,11 @@ fun HomeContent(
                 modifier = Modifier.padding(16.dp).fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = stringResource(id = R.string.enter_item))
+                // panggil OnBackgroundTitleText UI Element
+                OnBackgroundTitleText(
+                    text = stringResource(id = R.string.enter_item)
+                )
+
                 TextField(
                     value = inputField.name,
                     keyboardOptions = KeyboardOptions(
@@ -133,13 +140,14 @@ fun HomeContent(
                         onInputValueChange(it)
                     }
                 )
-                Button(onClick = {
+
+                // panggil PrimaryTextButton UI Element
+                PrimaryTextButton(
+                    text = stringResource(id = R.string.button_click)
+                ) {
                     onButtonClick()
-                }) {
-                    Text(text = stringResource(
-                        id = R.string.button_click
-                    ))
                 }
+
             }
         }
 
@@ -148,7 +156,7 @@ fun HomeContent(
                 modifier = Modifier.padding(vertical = 4.dp).fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = item.name)
+                OnBackgroundItemText(text = item.name)
             }
         }
     }
