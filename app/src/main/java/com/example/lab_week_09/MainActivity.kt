@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.lab_week_09.ui.theme.OnBackgroundItemText
 import com.example.lab_week_09.ui.theme.OnBackgroundTitleText
 import com.example.lab_week_09.ui.theme.PrimaryTextButton
@@ -45,7 +52,8 @@ class MainActivity : ComponentActivity() {
                     // MaterialTheme.colorScheme.background untuk get background colornya
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Home()
+                    val navController = rememberNavController()
+                    App(navController = navController)
                 }
             }
         }
@@ -55,6 +63,31 @@ class MainActivity : ComponentActivity() {
 data class Student(
     var name: String
 )
+
+@Composable
+fun App(navController: NavHostController) {
+    NavHost(
+        navController = navController,
+        startDestination = "home"
+    ) {
+        composable("home") {
+            Home { navController.navigate(
+                "resultContent/?listData=$it"
+            ) }
+        }
+
+        composable(
+            "resultContent/?listData={listData}",
+            arguments = listOf(navArgument("listData") {
+                type = NavType.StringType
+            })
+        ) {
+            ResultContent(
+                it.arguments?.getString("listData").orEmpty()
+            )
+        }
+    }
+}
 
 /* *
 * Disini, kita menghapus tag preview
@@ -70,7 +103,9 @@ data class Student(
 /* @Composable digunakan untuk memberitahu compiler bahwa ini adalah
 * composable function. */
 @Composable
-fun Home() {
+fun Home(
+    navigateFromHomeToResult: (String) -> Unit
+) {
     /*
     * Kita membuat mutable state list of students
     * Kita menggunakan remember supaya membuat list nya
@@ -106,6 +141,9 @@ fun Home() {
                 listData.add(inputField.value)
                 inputField.value = Student("")
             }
+        },
+        {
+            navigateFromHomeToResult(listData.toList().toString())
         }
     )
 }
@@ -116,7 +154,8 @@ fun HomeContent(
     listData: SnapshotStateList<Student>,
     inputField: Student,
     onInputValueChange: (String) -> Unit,
-    onButtonClick: () -> Unit
+    onButtonClick: () -> Unit,
+    navigateFromHomeToResult: () -> Unit
 ) {
     // lazy column untuk display items lazily
     LazyColumn {
@@ -141,12 +180,16 @@ fun HomeContent(
                     }
                 )
 
-                // panggil PrimaryTextButton UI Element
-                PrimaryTextButton(
-                    text = stringResource(id = R.string.button_click)
-                ) {
-                    onButtonClick()
+                Row {
+                    PrimaryTextButton(text = stringResource(id = R.string.button_click)) {
+                        onButtonClick()
+                    }
+
+                    PrimaryTextButton(text = stringResource(id = R.string.button_navigate)) {
+                        navigateFromHomeToResult()
+                    }
                 }
+
 
             }
         }
@@ -164,11 +207,11 @@ fun HomeContent(
 
 // membuat preview function dari home composable
 // func ini hanya untuk dev purposes dan secara spesifik hanya menampilkan pewview home composable
-@Preview(showBackground = true)
-@Composable
-fun PreviewHome() {
-    Home()
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewHome() {
+//    Home()
+//}
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
@@ -183,6 +226,18 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 fun GreetingPreview() {
     LAB_WEEK_09Theme {
         Greeting("Android")
+    }
+}
+
+@Composable
+fun ResultContent(listData: String) {
+    Column(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        OnBackgroundItemText(text = listData)
     }
 }
 
