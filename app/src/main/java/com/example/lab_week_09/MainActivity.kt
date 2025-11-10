@@ -38,6 +38,9 @@ import androidx.navigation.navArgument
 import com.example.lab_week_09.ui.theme.OnBackgroundItemText
 import com.example.lab_week_09.ui.theme.OnBackgroundTitleText
 import com.example.lab_week_09.ui.theme.PrimaryTextButton
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import java.net.URLDecoder
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,19 +74,20 @@ fun App(navController: NavHostController) {
         startDestination = "home"
     ) {
         composable("home") {
-            Home { navController.navigate(
-                "resultContent/?listData=$it"
-            ) }
+            Home { json ->
+                navController.navigate("resultContent/$json")
+            }
         }
 
         composable(
-            "resultContent/?listData={listData}",
+            "resultContent/{listData}",
             arguments = listOf(navArgument("listData") {
                 type = NavType.StringType
             })
         ) {
+            val json = it.arguments?.getString("listData").orEmpty()
             ResultContent(
-                it.arguments?.getString("listData").orEmpty()
+                json
             )
         }
     }
@@ -143,7 +147,16 @@ fun Home(
             }
         },
         {
-            navigateFromHomeToResult(listData.toList().toString())
+            val moshi = Moshi.Builder()
+                .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
+                .build()
+            val type = Types.newParameterizedType(List::class.java, Student::class.java)
+            val adapter = moshi.adapter<List<Student>>(type)
+            val json = adapter.toJson(listData)
+
+            val encodedJson = java.net.URLEncoder.encode(json, "UTF-8")
+
+            navigateFromHomeToResult(encodedJson)
         }
     )
 }
@@ -231,13 +244,29 @@ fun GreetingPreview() {
 
 @Composable
 fun ResultContent(listData: String) {
-    Column(
+    // Decode the JSON from URL-safe format
+    val decodedJson = URLDecoder.decode(listData, "UTF-8")
+
+    // Parse JSON to List<Student> using Moshi
+    val moshi = Moshi.Builder()
+        .add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
+        .build()
+    val type = Types.newParameterizedType(List::class.java, Student::class.java)
+    val adapter = moshi.adapter<List<Student>>(type)
+    val students = adapter.fromJson(decodedJson) ?: emptyList()
+
+    // Display using LazyColumn
+    LazyColumn(
         modifier = Modifier
-            .padding(vertical = 4.dp)
+            .padding(16.dp)
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OnBackgroundItemText(text = listData)
+        items(students) { student ->
+            OnBackgroundItemText(
+                text = student.name
+            )
+        }
     }
 }
 
